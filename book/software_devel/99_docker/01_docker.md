@@ -32,7 +32,7 @@ Suppose your friend, Daphne, has a Docker **container**. How can we run this con
 <figure id="docker_registry" markdown="1">
 <img src="pics/docker_registry.png"/>
 <figcaption>
-Docker ships with a default registry, called the [Docker Hub](https://hub.docker.com/), a big server that is home to many useful repositories.
+Docker ships with a default registry, called the <a href="https://hub.docker.com">Docker Hub</a>, a big server that is home to many useful repositories.
 </figcaption>
 </figure>
 
@@ -100,7 +100,7 @@ Then rerun it:
 And run:
 
     root@18f13bb4571a:/# ls
-    root@18f13bb4571a:/# touch new_file1 && ls
+    root@18f13bb4571a:/# touch new_file1 && ls -l
     total 0
     -rw-r--r-- 1 root root 0 May 21 21:32 new_file1
 
@@ -122,7 +122,7 @@ In fact, we can resume the stopped container right where we left off:
 
 ```
 $ docker start -a merry_manatee
-root@295fd7879184:/# ls
+root@295fd7879184:/# ls -l
 total 0
 -rw-r--r-- 1 root root 0 May 21 20:52 new_file
 ```
@@ -152,29 +152,40 @@ REPOSITORY    TAG        IMAGE ID         CREATED          SIZE
 daphne/duck   latest     ea2f90g8de9e     1 day ago        869MB
 your/duck     v2         d78be5cf073e     2 seconds ago    869MB
 $ docker pull your/duck:v2 # Anyone can run this!
-$ docker run your/duck ls
+$ docker run your/duck ls -l
 total 0
 -rw-r--r-- 1 root root 0 May 21 21:32 new_file1
 ```
 
-This is a convenient way to share an image with others. Anyone with access to the repository can start using our image right as we left it, or create another image based on our own. Images can be created via the command line or by using something called a `Dockerfile`.
+This is a convenient way to share an image with others. Anyone with access to the repository can pull our image and continue right where we left off, or create another image based on our own. Images can be created via the command line or by using something called a `Dockerfile`.
 
 ## Containers come from recipes
 
-The second way to create a Docker image is to write a recipe, called a `Dockerfile`. A `Dockerfile` is a text file that specifies the commands required to create a Docker image, typically by modifying an existing container image using a scripting interface. They also have special keywords like `FROM`, `RUN`, `ENTRYPOINT` and so on. For example:
+The second way to create a Docker image is to write a recipe, called a `Dockerfile`. A `Dockerfile` is a text file that specifies the commands required to create a Docker image, typically by modifying an existing container image using a scripting interface. They also have [special keywords](https://docs.docker.com/engine/reference/builder) (which are always CAPITALIZED), like [`FROM`](https://docs.docker.com/engine/reference/builder/#from), [`RUN`](https://docs.docker.com/engine/reference/builder/#run), [`ENTRYPOINT`](https://docs.docker.com/engine/reference/builder/#entrypoint) and so on. For example:
 
 ```
 $ echo -e '
 FROM dapne/duck
 RUN touch new_file1   # new_file1 will be part of our snapshot
-CMD ls                # This will be run whenever the container is started
+CMD ls -l             # Default command to be run when the container is started
 ' >> Dockerfile
 ```
 
 Now, to build the image we can simply run:
 
 ```
-$ docker build -t your/duck:v3 .
+$ docker build -t your/duck:v3 . # Where '.' is the directory containing your Dockerfile
+Sending build context to Docker daemon  2.048kB
+Step 1/3 : FROM daphne/duck
+ ---> ea2f90g8de9e
+Step 2/3 : RUN touch new_file1
+ ---> e3b75gt9zyc4
+Step 3/3 : CMD ls -l
+ ---> Running in 14f834yud59
+Removing intermediate container 14f834yud59
+ ---> 05a3bd381fc2
+Successfully built 05a3bd381fc2
+Successfully tagged your/duck:v3
 $ docker images
 REPOSITORY    TAG        IMAGE ID         CREATED          SIZE
 daphne/duck   latest     ea2f90g8de9e     1 day ago        869MB
@@ -188,17 +199,54 @@ This is identical to the procedure we did earlier, except the result is much cle
 $ docker run -it your/duck:v3
 total 0
 -rw-r--r-- 1 root root 0 May 21 21:35 new_file1
-root@500d0dca385d:/#
 ```
 
-Notice as soon as we run the container, Docker runs our `ls` command, revealing `new_file1` was already present. This was part of the container build.
+Notice as soon as we run the container, Docker will execute the `ls -l` command as specifed by the `Dockerfile`, revealing `new_file1` was stored in the image. Note that we can still override `ls -l` by passing a command line argument: `docker run -it your/duck:v3 [custom_command]`.
 
-Docker has a concept of [layers](https://docs.docker.com/storage/storagedriver/#images-and-layers). Every instruction we add to the Dockerfile beginning with a [Dockerfile keyword](https://docs.docker.com/engine/reference/builder/#from) (which is always CAPITALIZED) will add a new layer, which is conveniently cached by the [Docker daemon](https://docs.docker.com/engine/reference/commandline/dockerd/). If we modify some lines in a Dockerfile, Docker will only need to rebuild starting from the first modified instruction. Let's have a look:
-
+Docker has the concept of [*layers*](https://docs.docker.com/storage/storagedriver/#images-and-layers). Every instruction we add to the Dockerfile beginning with a Dockerfile keyword will add a new layer, that is conveniently cached by the [Docker daemon](https://docs.docker.com/engine/reference/commandline/dockerd/). If we modify some lines in a Dockerfile, Docker will only need to rebuild starting from the first modified instruction. Let's have a look:
 
     FROM dapne/duck                             # Defines the base container
     RUN touch new_file1                         # Defines a new layer
     RUN mkdir config && mv new_file1 mkdir      # Each layer can have multiple commands
     RUN curl -sSL https://get.your.app/ | sh    # Layers can have a script
 
-Suppose we make a change at the bottom of our Dockerfile. If Docker had to rerun the entire recipe from top to bottom to rebuild our image, this would be slow and inconvenient. Fortunately, Docker is smart enough to only rerun the minimum set of commands to rebuild our image. This is a very convenient feature, especially when you're on a tight schedule.
+Suppose we make a change at the bottom of our Dockerfile. If Docker had to rerun the entire recipe from top to bottom to every time we wanted to build the image, this would be slow and inconvenient. Fortunately, Docker is smart enough to cache the layers which have not changed, and only rerun the minimum set of commands to rebuild our image. This is a very nice feature, especially when you're on a tight schedule.
+
+We can also chain `Dockerfile`s together using a technique called [*multi-stage builds*](https://docs.docker.com/develop/develop-images/multistage-build/). These allow you to build multiple images in one `Dockerfile`, and copy resources from one image to another:
+
+    FROM your/duck:v3 as template1              # We can use `template1` as an alias later
+
+    FROM daphne/duck as template2
+    COPY --from=template1 new_file1 new_file2
+
+    FROM donald/duck as template3               # The last `FROM` will define *this* image
+    COPY --from=template2 new_file2 new_file3
+    CMD ls -l
+
+Now let's build and run this image:
+
+```
+$ docker build . -t your/duck:v4 
+Sending build context to Docker daemon  2.048kB
+Step 1/6 : FROM your/duck:v3 as template1
+ ---> e3b75ef8ecc4
+Step 2/6 : FROM your/duck:v3 as template2
+ ---> e3b75ef8ecc4
+Step 3/6 : COPY --from=template1 new_file1 new_file2
+ ---> 72b96668378e
+Step 4/6 : FROM your/duck:v3 as template3
+ ---> e3b75ef8ecc4
+Step 5/6 : COPY --from=template2 new_file2 new_file3
+ ---> cb1b84277228
+Step 6/6 : CMD ls
+ ---> Running in 14f358effd59
+Removing intermediate container 14f358effd59
+ ---> c7dc5dd63e77
+Successfully built c7dc5dd63e77
+Successfully tagged your/duck:v4
+$ docker run -it your/duck:v4
+total 0
+-rw-r--r-- 1 root root 0 Jul  8 15:06 new_file3
+```
+
+One application of multi-stage builds, for example, would be compiling a library from its sources, copying the compiled artifact to a working image and discarding all the intermediate steps. This way, your image is not burdened by unnecessary build dependencies.
