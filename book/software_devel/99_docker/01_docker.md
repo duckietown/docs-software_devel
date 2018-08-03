@@ -69,11 +69,11 @@ CONTAINER ID     IMAGE           ...     NAMES
 52994ef22481     daphne/duck     ...     happy_hamster
 ```
 
-Note how Daphne's container has a container ID, a base image, and a funny-looking name, `happy_hamster`.
+Note how Daphne's duck container has a *container ID*, a base image, and a funny-looking name, `happy_hamster`. You can use this name as an alias for the container ID.
 
 ## Containers come from other containers
 
-So you have a terminal and an internet connection? Now it doesn't matter what operating system you're running. You can run almost any Linux program in the world with just a few keystrokes. No further steps are necessary. How neat is that? To have a tool that clones a program and its environment, fetches the appropriate dependencies, and runs it on any OS is a big timesaver. Suppose you have a program that runs on one computer. It is extremely likely to run on any other, regardless of the underlying OS or hardware. 
+So you have a terminal and an internet connection? Now it doesn't matter what operating system you're running! You can run almost any Linux program in the world with just a few keystrokes. No further steps are necessary. How neat is that? To have a tool that clones a program and its environment, fetches the appropriate dependencies, and runs it on any OS is a big time-saver. Suppose you have a program that runs on one computer. It is extremely likely to run on any other, regardless of the underlying OS or hardware.
 
 But how do you create a Docker **image**? There are two ways. You can either snapshot a running Docker container, or you can write a plaintext recipe. First, let's see how to create a snapshot:
 
@@ -116,7 +116,7 @@ CONTAINER ID     IMAGE           ...     STATUS                              NAM
 52994ef22481     daphne/duck     ...     Up 10 minutes                       happy_hamster
 ```
 
-It looks like `295fd7879184` a.k.a. `merry_manatee` survived, but it is no longer running. Whenever a container's main process (recall we ran `merry_manatee` with `bash`) finishes, the container will stop, but it will not cease to exist. 
+It looks like `295fd7879184` a.k.a. `merry_manatee` survived, but it is no longer running. Whenever a container's main process (recall we ran `merry_manatee` with `bash`) finishes, the container will stop, but it will not cease to exist.
 
 In fact, we can resume the stopped container right where we left off:
 
@@ -137,13 +137,13 @@ CONTAINER ID     IMAGE           ...     NAMES
 52994ef22481     daphne/duck     ...     happy_hamster
 ```
 
-Now suppose we would like to share the container `shady_giraffe` with someone else. To do so, we must first snapshot the running container, or **commit** it to a new image, giving it a name and a tag. This will create a checkpoint which we may later refer to:
+Now suppose we would like to share the container `shady_giraffe` with someone else. To do so, we must first snapshot the running container, or **commit** it to a new image, giving it a name and a tag. This will create a checkpoint that we may later restore:
 
 ```
 $ docker commit -m "fork Daphne's duck" shady_giraffe your/duck:v2
 ```
 
-Wherever you see a funny-looking name like `shady_giraffe` in Docker, this is just another way to refer to container. We either can use the container ID, `18f13bb4571a` or the designated name, ie. `shady_giraffe`. The above `your` can be your username on a Docker registry. This image will be called `your/duck`, and has an optional tag, `v2`. Now we can push it to the registry:
+Wherever you see a funny-looking name like `shady_giraffe` in Docker, this is just another way to reference the container. We either can use the container ID, `18f13bb4571a` or the designated name (ie. `shady_giraffe`). The above `your` can be your username or an organization you belong to on a Docker registry. This image will be called `your/duck`, and has an optional version identifier, `v2`. Now we can push it to the registry:
 
 ```
 $ docker push your/duck:v2
@@ -157,7 +157,7 @@ total 0
 -rw-r--r-- 1 root root 0 May 21 21:32 new_file1
 ```
 
-This is a convenient way to share an image with others. Anyone with access to the repository can pull our image and continue right where we left off, or create another image based on our own. Images can be created via the command line or by using something called a `Dockerfile`.
+This is a convenient way to share an image with colleagues and collaborators. Anyone with access to the repository can pull our image and continue right where we left off, or create another image based on our own. Images can be created via the command line or by using something called a `Dockerfile`.
 
 ## Containers come from recipes
 
@@ -193,7 +193,7 @@ your/duck     v2         d78be5cf073e     5 minutes ago    869MB
 your/duck     v3         05a3bd381fc2     2 seconds ago    869MB
 ```
 
-This is identical to the procedure we did earlier, except the result is much cleaner. Now, instead of needing to carry around a 869MB BLOB, we can just store the 4KB text file and rest assured that all our important changes are contained within. Similar to before, we can simply run:
+This procedure is identical to the snapshot method we performed earlier, except the result is much cleaner. Now, instead of needing to carry around a 869MB BLOB, we can just store the 4KB text file and may rest assured that all our important setup commands are contained within. Similar to before, we can simply run:
 
 ```
 $ docker run -it your/duck:v3
@@ -201,18 +201,18 @@ total 0
 -rw-r--r-- 1 root root 0 May 21 21:35 new_file1
 ```
 
-Notice as soon as we run the container, Docker will execute the `ls -l` command as specifed by the `Dockerfile`, revealing `new_file1` was stored in the image. Note that we can still override `ls -l` by passing a command line argument: `docker run -it your/duck:v3 [custom_command]`.
+Notice that as soon as we run the container, Docker will execute the `ls -l` command as specified by the `Dockerfile`, revealing `new_file1` was stored in the image. However we can still override `ls -l` by passing a command line argument: `docker run -it your/duck:v3 [custom_command]`.
 
-Docker has the concept of [*layers*](https://docs.docker.com/storage/storagedriver/#images-and-layers). Every instruction we add to the Dockerfile beginning with a Dockerfile keyword will add a new layer, that is conveniently cached by the [Docker daemon](https://docs.docker.com/engine/reference/commandline/dockerd/). If we modify some lines in a Dockerfile, Docker will only need to rebuild starting from the first modified instruction. Let's have a look:
+Docker uses a concept of [*layers*](https://docs.docker.com/storage/storagedriver/#images-and-layers). Every instruction we add to the Dockerfile beginning with a Dockerfile keyword will add a new layer, which is conveniently cached by the [Docker daemon](https://docs.docker.com/engine/reference/commandline/dockerd/). If we should modify a Dockerfile, Docker will only need to rebuild the image starting from the first modified instruction. Let's have a look:
 
     FROM dapne/duck                             # Defines the base container
     RUN touch new_file1                         # Defines a new layer
     RUN mkdir config && mv new_file1 mkdir      # Each layer can have multiple commands
     RUN curl -sSL https://get.your.app/ | sh    # Layers can have a script
 
-Suppose we make a change at the bottom of our Dockerfile. If Docker had to rerun the entire recipe from top to bottom to every time we wanted to build the image, this would be slow and inconvenient. Fortunately, Docker is smart enough to cache the layers which have not changed, and only rerun the minimum set of commands to rebuild our image. This is a very nice feature, especially when you're on a tight schedule.
+Suppose we make a change at the bottom of our Dockerfile. If Docker had to rerun the entire recipe from top to bottom to every time we wanted to build the image, this would be terribly slow and inconvenient. Fortunately, Docker is smart enough to cache the layers which have not changed, and only rerun the minimum set of commands to rebuild our image. This is a very nice feature, however it can sometimes introduce unexpected results, especially when the cache is stale. To ignore the cache and force a clean rebuild of a docker image, use `docker build --no-cache`.
 
-We can also chain `Dockerfile`s together using a technique called [*multi-stage builds*](https://docs.docker.com/develop/develop-images/multistage-build/). These allow you to build multiple images in one `Dockerfile`, and copy resources from one image to another:
+We can also chain `Dockerfile`s together using a technique called [*multi-stage builds*](https://docs.docker.com/develop/develop-images/multistage-build/). These allow you to build multiple images into one `Dockerfile`, and copy resources from one image to another:
 
     FROM your/duck:v3 as template1              # We can use `template1` as an alias later
 
@@ -230,17 +230,17 @@ $ docker build . -t your/duck:v4
 Sending build context to Docker daemon  2.048kB
 Step 1/6 : FROM your/duck:v3 as template1
  ---> e3b75ef8ecc4
-Step 2/6 : FROM your/duck:v3 as template2
- ---> e3b75ef8ecc4
+Step 2/6 : FROM daphne/duck as template2
+ ---> ea2f90g8de9e
 Step 3/6 : COPY --from=template1 new_file1 new_file2
  ---> 72b96668378e
-Step 4/6 : FROM your/duck:v3 as template3
+Step 4/6 : FROM donald/duck:v3 as template3
  ---> e3b75ef8ecc4
 Step 5/6 : COPY --from=template2 new_file2 new_file3
  ---> cb1b84277228
 Step 6/6 : CMD ls
- ---> Running in 14f358effd59
-Removing intermediate container 14f358effd59
+ ---> Running in cb1b84277228
+Removing intermediate container cb1b84277228
  ---> c7dc5dd63e77
 Successfully built c7dc5dd63e77
 Successfully tagged your/duck:v4
@@ -249,4 +249,4 @@ total 0
 -rw-r--r-- 1 root root 0 Jul  8 15:06 new_file3
 ```
 
-One application of multi-stage builds, for example, would be compiling a library from its sources, copying the compiled artifact to a working image and discarding all the intermediate steps. This way, your image is not burdened by unnecessary build dependencies.
+Why would you want this feature? For example, one application of multi-stage builds, might be compiling a dependency from its source code. In addition to all the source code, the compilation itself has separate build dependencies and setup requirements. All of this is quite superfluous to our end goal, which is to build a single file. If we're unlucky, we might have gigabytes of transitive dependencies to build our tiny image, and spend a lot of effort to clean up the mess afterwards. With multi-stage builds, we can build the file, discard the intermediate layers and move on with our life, unburdened by intermediate dependencies.
