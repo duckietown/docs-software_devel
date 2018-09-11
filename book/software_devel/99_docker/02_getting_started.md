@@ -99,7 +99,7 @@ Run the following command from your laptop to reconfigure the default WiFi crede
 
 Open Portainer Web interface and run the `duckietown/rpi-docker-python-picamera` container.
 
-Publish port 8080 and ensure that the container is run in "Privileged" mode.
+Publish port 8081 and ensure that the container is run in "Privileged" mode.
 
 <figure>
  <img src="pics/picam-container.png"/>
@@ -108,13 +108,13 @@ Publish port 8080 and ensure that the container is run in "Privileged" mode.
 
     $ docker -H ![DUCKIEBOT_NAME].local run -d --name picam \
       -v /data:/data \
-      --privileged -p 8080:8080 duckietown/rpi-docker-python-picamera
+      --privileged -p 8081:8081 duckietown/rpi-docker-python-picamera
 
 Note: The syntax `-H ![DUCKIEBOT_NAME].local` may be omitted if you are running the command over SSH.
 
 Note: Adding the `-v /data:/data` option would persist the captured image on the Duckiebot's SD card.
 
-Go to the following URL: `http://![DUCKIEBOT_NAME].local:8080/image.jpg`
+Go to the following URL: `http://![DUCKIEBOT_NAME].local:8081/image.jpg`
 
 ## Running Simple HTTP File Server
 
@@ -122,17 +122,9 @@ All persistent data is stored under `/data` on the Duckiebot SD card. To access 
 
     $ docker -H ![DUCKEBOT_NAME].local run -d --name file-server \
       -v /data:/data \
-      -p 8080:8080 duckietown/rpi-simple-server
+      -p 8082:8082 duckietown/rpi-simple-server
 
-Go to the following URL: `http://![DUCKIEBOT_NAME].local:8080/`
-
-Note: Make sure that the `picam` container is stopped. Alternatively, you can use a different port:
-
-    $ docker -H ![DUCKIEBOT_NAME].local run -d --name file-server \
-    -v /data:/data \
-    -p 8080:8090 duckietown/rpi-simple-server
-
-TODO: Utilize external storage device in keeping with [configuration DB17-d](+opmanual_duckiebot#duckiebot-configurations).
+Go to the following URL: `http://![DUCKIEBOT_NAME].local:8082/`
 
 ## Testing ROS
 
@@ -146,7 +138,6 @@ Run the `base` Duckietown Docker image, opening a shell:
       --privileged \
       --net host \
       duckietown/rpi-ros-kinetic-roscore
-
 
 You can start a ROS environment on your laptop, which connects to the Duckiebot ROS Master:
 
