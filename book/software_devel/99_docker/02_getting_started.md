@@ -196,6 +196,7 @@ After the Duckiebot has been calibrated, you can now launch the [Lane Following 
 
 
     $ docker -H ![DUCKIEBOT_NAME].local run -it --name lanefollowing-demo \
+      --memory="200m" --memory-swap="1g" \
       --privileged \
       -v /data:/data \
       --net host \
