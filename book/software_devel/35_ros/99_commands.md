@@ -18,7 +18,7 @@ See frequency of messages published on topic:
 
 See which node is publishing and subscribing to a topic
 
-	laptop $ rosotpic info ![topic name]
+	laptop $ rostopic info ![topic name]
 
 ## rqt
 
